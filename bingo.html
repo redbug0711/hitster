@@ -15,9 +15,11 @@
             font-family:Arial, Helvetica, sans-serif;
             margin:0;
             padding:24px;
+            color:#fff;
         }
 
         .card{
+            width:min(560px, 96vw);
             background:#000;
             padding:18px;
             border-radius:20px;
@@ -31,32 +33,29 @@
             grid-template-rows:repeat(5,70px);
             gap:6px;
             margin-bottom:14px;
+            justify-content:center;
         }
 
         .cell{
             border-radius:6px;
             cursor:pointer;
             position:relative;
-            display:flex;
-            justify-content:center;
-            align-items:center;
             user-select:none;
-            transition:transform .12s ease;
+            transition:transform .12s ease, box-shadow .12s ease, filter .12s ease;
+            box-shadow:0 0 10px rgba(255,255,255,0.08);
+            overflow:hidden;
         }
         .cell:active{ transform:scale(0.97); }
-        .cell:hover{ transform:scale(1.03); }
+        .cell:hover{ transform:scale(1.03); filter:brightness(1.05); }
 
-        /* Farben */
-        .green{ background:#35d07f; }
-        .blue{ background:#2f92ff; }
-        .pink{ background:#7a6cff; }
-        .purple{ background:#d34cff; }
-        .yellow{ background:#c9c93a; }
-
-        /* X */
+        /* X auf Feld */
         .marked::after{
             content:"X";
             position:absolute;
+            inset:0;
+            display:flex;
+            align-items:center;
+            justify-content:center;
             font-size:52px;
             font-weight:900;
             color:#fff;
@@ -64,41 +63,44 @@
             line-height:1;
         }
 
-        /* Footer (editierbar) */
+        /* Footer editierbar + speichern */
         .footer{
             background:#fff;
             border-radius:10px;
-            padding:12px 12px 14px 12px;
-            min-height:64px;
-            position:relative;
+            padding:12px;
             box-sizing:border-box;
+        }
+
+        .noteRow{
             display:flex;
+            gap:10px;
             align-items:flex-start;
         }
 
         .note{
-            width:100%;
+            flex:1;
             border:none;
             outline:none;
             background:transparent;
             font-size:18px;
             resize:none;
-            min-height:40px;
-            padding-right:120px; /* Platz für HITSTER */
+            min-height:44px;
             box-sizing:border-box;
+            color:#000;
         }
 
-        .hitster{
-            position:absolute;
-            right:14px;
-            bottom:10px;
-            font-size:26px;
-            letter-spacing:3px;
-            color:#ff4fd8;
-            text-shadow:0 0 8px #ff4fd8, 0 0 16px #ff4fd8;
-            user-select:none;
-            pointer-events:none;
+        .saveBtn{
+            border:1px solid #333;
+            background:#111;
+            color:#fff;
+            border-radius:12px;
+            padding:10px 12px;
+            font-size:14px;
+            cursor:pointer;
+            white-space:nowrap;
+            align-self:stretch;
         }
+        .saveBtn:active{ transform:scale(0.98); }
 
         /* Bingo Overlay */
         .bingo-overlay{
@@ -107,7 +109,7 @@
             display:none;
             align-items:center;
             justify-content:center;
-            background:rgba(0,0,0,0.55);
+            background:rgba(0,0,0,0.58);
             border-radius:20px;
             z-index:10;
         }
@@ -117,22 +119,28 @@
             padding:18px 26px;
             border-radius:16px;
             background:#000;
-            border:2px solid #ff4fd8;
+            border:2px solid #d34cff;
             color:#fff;
             font-size:40px;
             font-weight:900;
             letter-spacing:4px;
-            text-shadow:0 0 10px #fff, 0 0 18px #ff4fd8;
-            box-shadow:0 0 18px #ff4fd8;
+            text-shadow:0 0 10px #fff, 0 0 18px #d34cff;
+            box-shadow:0 0 18px #d34cff;
+            animation: neonPulse 1.05s ease-in-out infinite;
+        }
+
+        @keyframes neonPulse{
+            0%{ transform:scale(1); box-shadow:0 0 14px #d34cff, 0 0 24px #d34cff; filter:brightness(1); }
+            50%{ transform:scale(1.06); box-shadow:0 0 22px #d34cff, 0 0 46px #d34cff; filter:brightness(1.2); }
+            100%{ transform:scale(1); box-shadow:0 0 14px #d34cff, 0 0 24px #d34cff; filter:brightness(1); }
         }
 
         .toolbar{
             display:flex;
             gap:10px;
-            margin-top:12px;
-            justify-content:space-between;
+            margin:15px 0;
         }
-        button{
+        button.tool{
             flex:1;
             padding:10px 12px;
             border-radius:12px;
@@ -142,7 +150,93 @@
             font-size:14px;
             cursor:pointer;
         }
-        button:active{ transform:scale(0.98); }
+        button.tool:active{ transform:scale(0.98); }
+
+        /* Antworten Liste */
+        .answers{
+            margin-top:14px;
+            background:#0c0c0c;
+            border:1px solid #222;
+            border-radius:14px;
+            padding:12px;
+        }
+
+        .answersHeader{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:10px;
+            margin-bottom:10px;
+        }
+
+        .answersTitle{
+            font-size:14px;
+            letter-spacing:1px;
+            opacity:0.9;
+        }
+
+        .clearAnswersBtn{
+            border:1px solid #333;
+            background:#111;
+            color:#fff;
+            border-radius:12px;
+            padding:8px 10px;
+            font-size:12px;
+            cursor:pointer;
+            white-space:nowrap;
+        }
+
+        .answersList{
+            list-style:none;
+            padding:0;
+            margin:0;
+            display:flex;
+            flex-direction:column;
+            gap:8px;
+        }
+
+        .answerItem{
+            background:#111;
+            border:1px solid #222;
+            border-radius:12px;
+            padding:10px 12px;
+            line-height:1.3;
+            word-break:break-word;
+            display:flex;
+            align-items:flex-start;
+            justify-content:space-between;
+            gap:10px;
+        }
+
+        .answerText{
+            flex:1;
+            white-space:pre-wrap;
+        }
+
+        .delOne{
+            width:26px;
+            height:26px;
+            border-radius:8px;
+            border:1px solid #333;
+            background:#0f0f0f;
+            color:#fff;
+            cursor:pointer;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:14px;
+            line-height:1;
+            flex:0 0 auto;
+            opacity:0.9;
+        }
+        .delOne:active{ transform:scale(0.96); }
+        .delOne:hover{ opacity:1; }
+
+        .emptyHint{
+            opacity:0.7;
+            font-size:13px;
+            padding:6px 2px;
+        }
 
         @media (max-width:420px){
             .grid{
@@ -156,19 +250,31 @@
 <body>
 
 <div class="card">
-    <div class="bingo-overlay" id="bingoOverlay">
+    <div class="bingo-overlay" id="bingoOverlay" title="Tippen zum Schließen">
         <div class="bingo-badge">BINGO!</div>
     </div>
-
+    <div class="toolbar">
+        <button class="tool" id="newCardBtn">Neue Karte</button>
+        <button class="tool" id="resetMarksBtn">X zurücksetzen</button>
+    </div>
     <div class="grid" id="grid"></div>
 
     <div class="footer">
-        <textarea class="note" id="note" placeholder="Hier Text eingeben…"></textarea>
+        <div class="noteRow">
+            <textarea class="note" id="note" placeholder="Meine Antwort…"></textarea>
+            <button class="saveBtn" id="saveBtn">Speichern</button>
+        </div>
     </div>
 
-    <div class="toolbar">
-        <button id="newCardBtn">Neue Karte</button>
-        <button id="resetMarksBtn">zurücksetzen</button>
+
+
+    <div class="answers" id="answersBox">
+        <div class="answersHeader">
+            <div class="answersTitle">ANTWORTEN</div>
+            <button class="clearAnswersBtn" id="clearAnswersBtn">Liste löschen</button>
+        </div>
+        <ul class="answersList" id="answersList"></ul>
+        <div class="emptyHint" id="emptyHint">Noch keine Antworten vorhanden.</div>
     </div>
 </div>
 
@@ -178,17 +284,78 @@
     const newCardBtn = document.getElementById("newCardBtn");
     const resetMarksBtn = document.getElementById("resetMarksBtn");
 
-    // 25 Felder, 5 Farben => exakt 5 pro Farbe (gleichmäßige Zufallsverteilung)
-    const COLORS = [
-        { key: "green",  hex: "#2ecc71" },
-        { key: "blue",   hex: "#3498db" },
-        { key: "pink",   hex: "#ff4fd8" },
-        { key: "purple", hex: "#9b59b6" },
-        { key: "yellow", hex: "#f1c40f" },
+    const noteEl = document.getElementById("note");
+    const saveBtn = document.getElementById("saveBtn");
+    const answersListEl = document.getElementById("answersList");
+    const emptyHintEl = document.getElementById("emptyHint");
+    const clearAnswersBtn = document.getElementById("clearAnswersBtn");
+
+    // Farben analog Rad (color + glow)
+    const PALETTE = [
+        { color:"#35d07f", glow:"#67ffb6" },
+        { color:"#7a6cff", glow:"#b0a6ff" },
+        { color:"#2f92ff", glow:"#79c0ff" },
+        { color:"#d34cff", glow:"#ff97ff" },
+        { color:"#c9c93a", glow:"#fff07a" },
     ];
 
-    let cells = []; // DOM refs
+    let cells = [];
+    let bingoActive = false;
 
+    // --- Antworten speichern (localStorage) ---
+    const LS_KEY = "hitster_bingo_answers_v2";
+    function loadAnswers(){
+        try{ return JSON.parse(localStorage.getItem(LS_KEY) || "[]"); }
+        catch{ return []; }
+    }
+    function saveAnswers(list){
+        localStorage.setItem(LS_KEY, JSON.stringify(list));
+    }
+    let answers = loadAnswers();
+
+    function renderAnswers(){
+        answersListEl.innerHTML = "";
+
+        if(answers.length === 0){
+            emptyHintEl.style.display = "block";
+            return;
+        }
+        emptyHintEl.style.display = "none";
+
+        answers.forEach((text, idx) => {
+            const li = document.createElement("li");
+            li.className = "answerItem";
+
+            const span = document.createElement("div");
+            span.className = "answerText";
+            span.textContent = text;
+
+            const del = document.createElement("button");
+            del.className = "delOne";
+            del.type = "button";
+            del.title = "Eintrag löschen";
+            del.textContent = "✕";
+            del.addEventListener("click", () => {
+                answers.splice(idx, 1);
+                saveAnswers(answers);
+                renderAnswers();
+            });
+
+            li.appendChild(span);
+            li.appendChild(del);
+            answersListEl.appendChild(li);
+        });
+    }
+
+    function addAnswer(text){
+        const cleaned = text.trim();
+        if(!cleaned) return;
+        answers.push(cleaned);
+        saveAnswers(answers);
+        renderAnswers();
+    }
+
+    // --- Zufallsverteilung (exakt 5 Felder je Farbe) ---
     function shuffle(arr){
         for(let i = arr.length - 1; i > 0; i--){
             const j = Math.floor(Math.random() * (i + 1));
@@ -199,22 +366,17 @@
 
     function buildColorList(){
         const list = [];
-        for(const c of COLORS){
-            for(let i=0;i<5;i++) list.push(c.key); // exakt 5x je Farbe
+        for(let i=0;i<5;i++){
+            // jede Farbe genau 5x
+            for(let k=0;k<5;k++) list.push(i); // index in PALETTE
         }
-        return shuffle(list);
+        return shuffle(list); // 25 indices
     }
 
-    function hideBingo(){
-        overlay.classList.remove("show");
-    }
-
-    function showBingo(){
-        overlay.classList.add("show");
-    }
+    function hideBingo(){ overlay.classList.remove("show"); }
+    function showBingo(){ overlay.classList.add("show"); }
 
     function getMarkedMatrix(){
-        // 5x5 boolean matrix
         const m = Array.from({length:5}, ()=>Array(5).fill(false));
         for(let i=0;i<25;i++){
             const r = Math.floor(i/5);
@@ -233,53 +395,100 @@
             for(let c=0;c<5;c++) if(!m[r][c]) { ok=false; break; }
             if(ok) return true;
         }
-
         // Spalten
         for(let c=0;c<5;c++){
             let ok=true;
             for(let r=0;r<5;r++) if(!m[r][c]) { ok=false; break; }
             if(ok) return true;
         }
+        // Diagonalen
+        let ok=true;
+        for(let i=0;i<5;i++) if(!m[i][i]) { ok=false; break; }
+        if(ok) return true;
 
-        // Diagonale TL->BR
-        {
-            let ok=true;
-            for(let i=0;i<5;i++) if(!m[i][i]) { ok=false; break; }
-            if(ok) return true;
-        }
-
-        // Diagonale TR->BL
-        {
-            let ok=true;
-            for(let i=0;i<5;i++) if(!m[i][4-i]) { ok=false; break; }
-            if(ok) return true;
-        }
+        ok=true;
+        for(let i=0;i<5;i++) if(!m[i][4-i]) { ok=false; break; }
+        if(ok) return true;
 
         return false;
     }
 
+    // --- SOUND (WebAudio) ---
+    let audioCtx = null;
+
+    function ensureAudio(){
+        if(!audioCtx){
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if(audioCtx.state === "suspended"){
+            audioCtx.resume();
+        }
+    }
+
+    function beep(freq, startTime, duration, type="sine", gain=0.12){
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = type;
+        o.frequency.setValueAtTime(freq, startTime);
+        g.gain.setValueAtTime(0.0001, startTime);
+        g.gain.exponentialRampToValueAtTime(gain, startTime + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+        o.connect(g);
+        g.connect(audioCtx.destination);
+        o.start(startTime);
+        o.stop(startTime + duration + 0.02);
+    }
+
+    function playBingoSound(){
+        ensureAudio();
+        const t = audioCtx.currentTime + 0.02;
+        beep(523.25,  t,       0.12, "sine",     0.10); // C5
+        beep(659.25,  t+0.02,  0.14, "sine",     0.09); // E5
+        beep(783.99,  t+0.04,  0.18, "sine",     0.08); // G5
+        beep(1046.50, t+0.12,  0.22, "triangle", 0.10); // C6
+    }
+
     function refreshBingoState(){
-        if(checkBingo()) showBingo();
-        else hideBingo();
+        const nowBingo = checkBingo();
+        if(nowBingo){
+            showBingo();
+            if(!bingoActive){
+                playBingoSound();
+                bingoActive = true;
+            }
+        }else{
+            hideBingo();
+            bingoActive = false;
+        }
     }
 
     function clearMarks(){
         cells.forEach(cell => cell.classList.remove("marked"));
         hideBingo();
+        bingoActive = false;
+    }
+
+    function applyCellStyle(cell, p){
+        cell.style.background = p.color;
+        cell.style.boxShadow = `0 0 10px ${p.glow}55, 0 0 18px ${p.glow}33`;
     }
 
     function renderCard(){
         hideBingo();
+        bingoActive = false;
         gridEl.innerHTML = "";
         cells = [];
 
-        const colorList = buildColorList(); // 25 Einträge
+        const colorIdxList = buildColorList();
         for(let i=0;i<25;i++){
             const cell = document.createElement("div");
-            cell.className = `cell ${colorList[i]}`;
-            cell.dataset.index = String(i);
+            cell.className = "cell";
+
+            const p = PALETTE[colorIdxList[i]];
+            applyCellStyle(cell, p);
 
             cell.addEventListener("click", () => {
+                ensureAudio(); // wichtig für iOS
                 cell.classList.toggle("marked");
                 refreshBingoState();
             });
@@ -289,19 +498,39 @@
         }
     }
 
-    // Overlay anklickbar zum Schließen (optional)
-    overlay.addEventListener("click", hideBingo);
+    // --- Events ---
+    overlay.addEventListener("click", () => hideBingo());
 
-    newCardBtn.addEventListener("click", () => {
-        renderCard();
-    });
+    newCardBtn.addEventListener("click", () => renderCard());
 
     resetMarksBtn.addEventListener("click", () => {
         clearMarks();
+        refreshBingoState();
+    });
+
+    saveBtn.addEventListener("click", () => {
+        addAnswer(noteEl.value);
+        noteEl.value = "";
+        noteEl.focus();
+    });
+
+    // Enter = Speichern (Shift+Enter = neue Zeile)
+    noteEl.addEventListener("keydown", (e) => {
+        if(e.key === "Enter" && !e.shiftKey){
+            e.preventDefault();
+            saveBtn.click();
+        }
+    });
+
+    clearAnswersBtn.addEventListener("click", () => {
+        answers = [];
+        saveAnswers(answers);
+        renderAnswers();
     });
 
     // init
     renderCard();
+    renderAnswers();
 </script>
 
 </body>
