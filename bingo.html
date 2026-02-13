@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hitster Bingo</title>
+
+    <style>
+        body{
+            background:#111;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            min-height:100vh;
+            font-family:Arial, Helvetica, sans-serif;
+            margin:0;
+            padding:24px;
+        }
+
+        .card{
+            background:#000;
+            padding:18px;
+            border-radius:20px;
+            box-shadow:0 0 22px #000;
+            position:relative;
+        }
+
+        .grid{
+            display:grid;
+            grid-template-columns:repeat(5,70px);
+            grid-template-rows:repeat(5,70px);
+            gap:6px;
+            margin-bottom:14px;
+        }
+
+        .cell{
+            border-radius:6px;
+            cursor:pointer;
+            position:relative;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            user-select:none;
+            transition:transform .12s ease;
+        }
+        .cell:active{ transform:scale(0.97); }
+        .cell:hover{ transform:scale(1.03); }
+
+        /* Farben */
+        .green{ background:#35d07f; }
+        .blue{ background:#2f92ff; }
+        .pink{ background:#7a6cff; }
+        .purple{ background:#d34cff; }
+        .yellow{ background:#c9c93a; }
+
+        /* X */
+        .marked::after{
+            content:"X";
+            position:absolute;
+            font-size:52px;
+            font-weight:900;
+            color:#fff;
+            text-shadow:0 0 10px #fff, 0 0 22px #fff;
+            line-height:1;
+        }
+
+        /* Footer (editierbar) */
+        .footer{
+            background:#fff;
+            border-radius:10px;
+            padding:12px 12px 14px 12px;
+            min-height:64px;
+            position:relative;
+            box-sizing:border-box;
+            display:flex;
+            align-items:flex-start;
+        }
+
+        .note{
+            width:100%;
+            border:none;
+            outline:none;
+            background:transparent;
+            font-size:18px;
+            resize:none;
+            min-height:40px;
+            padding-right:120px; /* Platz für HITSTER */
+            box-sizing:border-box;
+        }
+
+        .hitster{
+            position:absolute;
+            right:14px;
+            bottom:10px;
+            font-size:26px;
+            letter-spacing:3px;
+            color:#ff4fd8;
+            text-shadow:0 0 8px #ff4fd8, 0 0 16px #ff4fd8;
+            user-select:none;
+            pointer-events:none;
+        }
+
+        /* Bingo Overlay */
+        .bingo-overlay{
+            position:absolute;
+            inset:0;
+            display:none;
+            align-items:center;
+            justify-content:center;
+            background:rgba(0,0,0,0.55);
+            border-radius:20px;
+            z-index:10;
+        }
+        .bingo-overlay.show{ display:flex; }
+
+        .bingo-badge{
+            padding:18px 26px;
+            border-radius:16px;
+            background:#000;
+            border:2px solid #ff4fd8;
+            color:#fff;
+            font-size:40px;
+            font-weight:900;
+            letter-spacing:4px;
+            text-shadow:0 0 10px #fff, 0 0 18px #ff4fd8;
+            box-shadow:0 0 18px #ff4fd8;
+        }
+
+        .toolbar{
+            display:flex;
+            gap:10px;
+            margin-top:12px;
+            justify-content:space-between;
+        }
+        button{
+            flex:1;
+            padding:10px 12px;
+            border-radius:12px;
+            border:1px solid #333;
+            background:#111;
+            color:#fff;
+            font-size:14px;
+            cursor:pointer;
+        }
+        button:active{ transform:scale(0.98); }
+
+        @media (max-width:420px){
+            .grid{
+                grid-template-columns:repeat(5,58px);
+                grid-template-rows:repeat(5,58px);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="card">
+    <div class="bingo-overlay" id="bingoOverlay">
+        <div class="bingo-badge">BINGO!</div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="footer">
+        <textarea class="note" id="note" placeholder="Hier Text eingeben…"></textarea>
+    </div>
+
+    <div class="toolbar">
+        <button id="newCardBtn">Neue Karte</button>
+        <button id="resetMarksBtn">zurücksetzen</button>
+    </div>
+</div>
+
+<script>
+    const gridEl = document.getElementById("grid");
+    const overlay = document.getElementById("bingoOverlay");
+    const newCardBtn = document.getElementById("newCardBtn");
+    const resetMarksBtn = document.getElementById("resetMarksBtn");
+
+    // 25 Felder, 5 Farben => exakt 5 pro Farbe (gleichmäßige Zufallsverteilung)
+    const COLORS = [
+        { key: "green",  hex: "#2ecc71" },
+        { key: "blue",   hex: "#3498db" },
+        { key: "pink",   hex: "#ff4fd8" },
+        { key: "purple", hex: "#9b59b6" },
+        { key: "yellow", hex: "#f1c40f" },
+    ];
+
+    let cells = []; // DOM refs
+
+    function shuffle(arr){
+        for(let i = arr.length - 1; i > 0; i--){
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    function buildColorList(){
+        const list = [];
+        for(const c of COLORS){
+            for(let i=0;i<5;i++) list.push(c.key); // exakt 5x je Farbe
+        }
+        return shuffle(list);
+    }
+
+    function hideBingo(){
+        overlay.classList.remove("show");
+    }
+
+    function showBingo(){
+        overlay.classList.add("show");
+    }
+
+    function getMarkedMatrix(){
+        // 5x5 boolean matrix
+        const m = Array.from({length:5}, ()=>Array(5).fill(false));
+        for(let i=0;i<25;i++){
+            const r = Math.floor(i/5);
+            const c = i%5;
+            m[r][c] = cells[i].classList.contains("marked");
+        }
+        return m;
+    }
+
+    function checkBingo(){
+        const m = getMarkedMatrix();
+
+        // Reihen
+        for(let r=0;r<5;r++){
+            let ok=true;
+            for(let c=0;c<5;c++) if(!m[r][c]) { ok=false; break; }
+            if(ok) return true;
+        }
+
+        // Spalten
+        for(let c=0;c<5;c++){
+            let ok=true;
+            for(let r=0;r<5;r++) if(!m[r][c]) { ok=false; break; }
+            if(ok) return true;
+        }
+
+        // Diagonale TL->BR
+        {
+            let ok=true;
+            for(let i=0;i<5;i++) if(!m[i][i]) { ok=false; break; }
+            if(ok) return true;
+        }
+
+        // Diagonale TR->BL
+        {
+            let ok=true;
+            for(let i=0;i<5;i++) if(!m[i][4-i]) { ok=false; break; }
+            if(ok) return true;
+        }
+
+        return false;
+    }
+
+    function refreshBingoState(){
+        if(checkBingo()) showBingo();
+        else hideBingo();
+    }
+
+    function clearMarks(){
+        cells.forEach(cell => cell.classList.remove("marked"));
+        hideBingo();
+    }
+
+    function renderCard(){
+        hideBingo();
+        gridEl.innerHTML = "";
+        cells = [];
+
+        const colorList = buildColorList(); // 25 Einträge
+        for(let i=0;i<25;i++){
+            const cell = document.createElement("div");
+            cell.className = `cell ${colorList[i]}`;
+            cell.dataset.index = String(i);
+
+            cell.addEventListener("click", () => {
+                cell.classList.toggle("marked");
+                refreshBingoState();
+            });
+
+            gridEl.appendChild(cell);
+            cells.push(cell);
+        }
+    }
+
+    // Overlay anklickbar zum Schließen (optional)
+    overlay.addEventListener("click", hideBingo);
+
+    newCardBtn.addEventListener("click", () => {
+        renderCard();
+    });
+
+    resetMarksBtn.addEventListener("click", () => {
+        clearMarks();
+    });
+
+    // init
+    renderCard();
+</script>
+
+</body>
+</html>
