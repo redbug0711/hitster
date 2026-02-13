@@ -241,7 +241,7 @@
                   ctx.restore();
 
                   // Beschriftung UNTERHALB des Farbfeldes
-                  const textDist = r*0.86;
+                  const textDist = r*0.46;
                   const tx = cx + Math.cos(aMid)*textDist;
                   const ty = cy + Math.sin(aMid)*textDist;
 
@@ -261,7 +261,7 @@
               // Mittelkuppel
               ctx.beginPath();
               ctx.arc(cx,cy,r*0.23,0,TAU);
-              ctx.fillStyle="#ddd";
+              ctx.fillStyle="#fff";
               ctx.fill();
 
               drawPointer(cx,cy,r);
@@ -282,7 +282,7 @@
               const intra=(Math.random()*0.6-0.3)*segAngle;
               const finalAngle=targetAngle+intra+spins*TAU;
 
-              const duration=3200;
+              const duration=6200;
               const start=performance.now();
               const startAngle=currentAngle;
 
