@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Neon-Glücksrad</title>
+  <title>Hitser</title>
   <style>
     :root{
       --bg: #0b0e13;
@@ -106,11 +106,6 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>🎡 Neon-Glücksrad (wie dein Foto)</h1>
-    <p class="sub">
-      5 Farb-Segmente (grün, lila, blau, rosa, gelb) im Neon-Look – zufälliger Stopp, Ergebnisanzeige.
-    </p>
-
     <div class="stage">
       <canvas id="wheel" width="900" height="900"></canvas>
     </div>
@@ -121,309 +116,203 @@
     </div>
 
     <div class="result" id="result"></div>
-    <div class="hint">Tipp: Auf dem Handy einfach „Drehen“ tippen.</div>
   </div>
 
-<script>
-(() => {
-  const canvas = document.getElementById("wheel");
-  const ctx = canvas.getContext("2d");
-  const spinBtn = document.getElementById("spinBtn");
-  const resultEl = document.getElementById("result");
-  const statusEl = document.getElementById("status");
+  <script>
+      (() => {
+          const canvas = document.getElementById("wheel");
+          const ctx = canvas.getContext("2d");
+          const spinBtn = document.getElementById("spinBtn");
+          const resultEl = document.getElementById("result");
+          const statusEl = document.getElementById("status");
 
-  // 5 Segmente wie im Wunsch (Farben)
-  const segments = [
-    { key:"gruen", label:"Grün",  color:"#35d07f", glow:"#5bffb0", extra:["✦","✦","✦"] },
-    { key:"lila",  label:"Lila",  color:"#7a6cff", glow:"#a89dff", extra:["0","0","0"] },
-    { key:"blau",  label:"Blau",  color:"#2f92ff", glow:"#66b6ff", extra:["2","2"] },
-    { key:"rosa",  label:"Rosa",  color:"#d34cff", glow:"#ff8bff", extra:["200","200","200"] },
-    { key:"gelb",  label:"Gelb",  color:"#c9c93a", glow:"#fff27a", extra:["4","4"] },
-  ];
+          // Reihenfolge im Uhrzeigersinn ab oben
+          const segments = [
+              { label:"Gruppe / Solo", color:"#35d07f", glow:"#67ffb6" },
+              { label:"Jahrzehnt",     color:"#7a6cff", glow:"#b0a6ff" },
+              { label:"2 Jahre",       color:"#2f92ff", glow:"#79c0ff" },
+              { label:"2000",          color:"#d34cff", glow:"#ff97ff" },
+              { label:"4 Jahre",       color:"#c9c93a", glow:"#fff07a" },
+          ];
 
-  const N = segments.length;
-  const TAU = Math.PI * 2;
-  const segAngle = TAU / N;
+          const N = segments.length;
+          const TAU = Math.PI * 2;
+          const segAngle = TAU / N;
 
-  // Pointer oben (wie Zeiger)
-  const pointerAngle = -Math.PI/2;
+          const pointerAngle = -Math.PI/2;
+          const offset = pointerAngle - segAngle/2;
 
-  let currentAngle = 0;
-  let spinning = false;
+          let currentAngle = 0;
+          let spinning = false;
 
-  // ---------- Helper: Neon drawing ----------
-  function neonStroke(pathFn, stroke, width, glow, glowBlur) {
-    ctx.save();
-    ctx.lineWidth = width;
-    ctx.strokeStyle = stroke;
-    ctx.shadowColor = glow;
-    ctx.shadowBlur = glowBlur;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.beginPath();
-    pathFn();
-    ctx.stroke();
-    ctx.restore();
-  }
+          function neonStroke(pathFn, stroke, width, glow, blur) {
+              ctx.save();
+              ctx.lineWidth = width;
+              ctx.strokeStyle = stroke;
+              ctx.shadowColor = glow;
+              ctx.shadowBlur = blur;
+              ctx.beginPath();
+              pathFn();
+              ctx.stroke();
+              ctx.restore();
+          }
 
-  function neonFill(pathFn, fill, glow, glowBlur) {
-    ctx.save();
-    ctx.fillStyle = fill;
-    ctx.shadowColor = glow;
-    ctx.shadowBlur = glowBlur;
-    ctx.beginPath();
-    pathFn();
-    ctx.fill();
-    ctx.restore();
-  }
+          function drawPointer(cx, cy, r) {
+              ctx.save();
+              ctx.shadowColor = "white";
+              ctx.shadowBlur = r*0.1;
+              ctx.fillStyle = "white";
+              ctx.beginPath();
+              ctx.moveTo(cx, cy-r*1.02);
+              ctx.lineTo(cx-r*0.06, cy-r*0.88);
+              ctx.lineTo(cx+r*0.06, cy-r*0.88);
+              ctx.closePath();
+              ctx.fill();
+              ctx.restore();
+          }
 
-  function drawBackground(cx, cy, r) {
-    // Black disc
-    ctx.save();
-    ctx.clearRect(0,0,canvas.width, canvas.height);
+          function segmentIndexAtPointer(angle) {
+              let local = (pointerAngle - (angle + offset)) % TAU;
+              if (local < 0) local += TAU;
+              return Math.floor(local / segAngle);
+          }
 
-    // soft vignette
-    const g = ctx.createRadialGradient(cx, cy, r*0.2, cx, cy, r*1.05);
-    g.addColorStop(0, "#121a2a");
-    g.addColorStop(0.55, "#070a10");
-    g.addColorStop(1, "#04050a");
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r*1.02, 0, TAU);
-    ctx.fill();
+          function drawWheel(angle) {
+              const w = canvas.width;
+              const h = canvas.height;
+              const cx = w/2;
+              const cy = h/2;
+              const r = Math.min(w,h)*0.47;
 
-    // rim
-    neonStroke(() => ctx.arc(cx, cy, r*0.98, 0, TAU), "rgba(255,255,255,.12)", r*0.015, "rgba(255,255,255,.25)", r*0.06);
-    ctx.restore();
-  }
+              ctx.clearRect(0,0,w,h);
 
-  function drawCenterDome(cx, cy, r) {
-    // center "dome" like the photo (grey translucent)
-    ctx.save();
-    const domeR = r*0.23;
+              // Schwarzer Body
+              ctx.fillStyle="#0b0e13";
+              ctx.beginPath();
+              ctx.arc(cx,cy,r,0,TAU);
+              ctx.fill();
 
-    const grad = ctx.createRadialGradient(cx - domeR*0.25, cy - domeR*0.25, domeR*0.2, cx, cy, domeR);
-    grad.addColorStop(0, "rgba(255,255,255,.85)");
-    grad.addColorStop(0.35, "rgba(200,210,230,.55)");
-    grad.addColorStop(1, "rgba(90,100,120,.25)");
+              // Außenring Neon
+              neonStroke(
+                  () => ctx.arc(cx,cy,r*0.99,0,TAU),
+                  "rgba(255,255,255,.15)",
+                  r*0.015,
+                  "rgba(255,255,255,.4)",
+                  r*0.1
+              );
 
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(cx, cy, domeR, 0, TAU);
-    ctx.fill();
+              const base = angle + offset;
 
-    // facets impression
-    ctx.globalAlpha = 0.25;
-    ctx.strokeStyle = "rgba(255,255,255,.35)";
-    ctx.lineWidth = r*0.004;
-    for(let i=0;i<18;i++){
-      const a = (i/18)*TAU;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + Math.cos(a)*domeR, cy + Math.sin(a)*domeR);
-      ctx.stroke();
-    }
+              for(let i=0;i<N;i++){
+                  const seg = segments[i];
+                  const a0 = base + i*segAngle;
+                  const aMid = a0 + segAngle/2;
 
-    // dome ring
-    ctx.globalAlpha = 1;
-    neonStroke(() => ctx.arc(cx, cy, domeR, 0, TAU), "rgba(255,255,255,.18)", r*0.01, "rgba(255,255,255,.25)", r*0.05);
+                  // Trennlinie Neon
+                  neonStroke(
+                      () => {
+                          ctx.moveTo(cx + Math.cos(a0)*r*0.25, cy + Math.sin(a0)*r*0.25);
+                          ctx.lineTo(cx + Math.cos(a0)*r*0.98, cy + Math.sin(a0)*r*0.98);
+                      },
+                      "rgba(255,255,255,.1)",
+                      r*0.01,
+                      seg.glow,
+                      r*0.12
+                  );
 
-    ctx.restore();
-  }
+                  // Farbiges Quadrat
+                  const sqDist = r*0.68;
+                  const sqSize = r*0.28;
+                  const sx = cx + Math.cos(aMid)*sqDist;
+                  const sy = cy + Math.sin(aMid)*sqDist;
 
-  function drawPointer(cx, cy, r) {
-    // top pointer triangle
-    ctx.save();
-    const w = r*0.08;
-    const h = r*0.10;
+                  ctx.save();
+                  ctx.translate(sx,sy);
+                  ctx.rotate(aMid + Math.PI/2);
 
-    ctx.translate(cx, cy);
-    ctx.rotate(pointerAngle);
+                  ctx.shadowColor = seg.glow;
+                  ctx.shadowBlur = r*0.18;
+                  ctx.fillStyle = seg.color;
+                  ctx.fillRect(-sqSize/2,-sqSize/2,sqSize,sqSize);
 
-    neonFill(() => {
-      ctx.moveTo(0, -r*0.98);
-      ctx.lineTo(-w/2, -r*0.98 + h);
-      ctx.lineTo(w/2, -r*0.98 + h);
-      ctx.closePath();
-    }, "rgba(255,255,255,.9)", "rgba(255,255,255,.65)", r*0.08);
+                  ctx.lineWidth = r*0.01;
+                  ctx.strokeStyle="rgba(255,255,255,.3)";
+                  ctx.strokeRect(-sqSize/2,-sqSize/2,sqSize,sqSize);
+                  ctx.restore();
 
-    ctx.restore();
-  }
+                  // Beschriftung UNTERHALB des Farbfeldes
+                  const textDist = r*0.86;
+                  const tx = cx + Math.cos(aMid)*textDist;
+                  const ty = cy + Math.sin(aMid)*textDist;
 
-  function segmentIndexAtPointer(angle) {
-    // pointer is at -90deg; we want which segment is under that pointer.
-    // Convert pointer direction into wheel local angle:
-    // if wheel rotates by angle, the content rotates; effective pointer samples at (-90 - angle)
-    let a = (pointerAngle - angle) % TAU;
-    if (a < 0) a += TAU;
-    const idx = Math.floor(a / segAngle);
-    return idx; // 0..N-1
-  }
+                  ctx.save();
+                  ctx.translate(tx,ty);
+                  ctx.rotate(aMid + Math.PI/2);
+                  ctx.textAlign="center";
+                  ctx.textBaseline="middle";
+                  ctx.font=`bold ${Math.floor(r*0.07)}px sans-serif`;
+                  ctx.fillStyle="rgba(200,210,255,.7)";
+                  ctx.shadowColor=seg.glow;
+                  ctx.shadowBlur=r*0.1;
+                  ctx.fillText(seg.label,0,0);
+                  ctx.restore();
+              }
 
-  function drawWheel(angle) {
-    const w = canvas.width;
-    const h = canvas.height;
-    const cx = w/2;
-    const cy = h/2;
-    const r = Math.min(w,h)*0.47;
+              // Mittelkuppel
+              ctx.beginPath();
+              ctx.arc(cx,cy,r*0.23,0,TAU);
+              ctx.fillStyle="#ddd";
+              ctx.fill();
 
-    drawBackground(cx, cy, r);
+              drawPointer(cx,cy,r);
+          }
 
-    // segments: neon spokes + squares + small neon marks like photo
-    for (let i=0;i<N;i++){
-      const seg = segments[i];
-      const a0 = angle + i*segAngle;
-      const aMid = a0 + segAngle*0.52;
+          function spin(){
+              if(spinning) return;
+              spinning=true;
+              spinBtn.disabled=true;
+              statusEl.textContent="dreht…";
+              resultEl.textContent="";
 
-      // radial neon line (spoke)
-      neonStroke(() => {
-        ctx.moveTo(cx + Math.cos(a0)*r*0.25, cy + Math.sin(a0)*r*0.25);
-        ctx.lineTo(cx + Math.cos(a0)*r*0.95, cy + Math.sin(a0)*r*0.95);
-      }, "rgba(255,255,255,.14)", r*0.01, seg.glow, r*0.07);
+              const targetIdx=Math.floor(Math.random()*N);
+              const targetMid=targetIdx*segAngle+segAngle/2;
+              let targetAngle=pointerAngle-offset-targetMid;
 
-      // colored square near rim (like photo)
-      const sqDist = r*0.67;
-      const sqSize = r*0.27;
-      const sx = cx + Math.cos(aMid)*sqDist;
-      const sy = cy + Math.sin(aMid)*sqDist;
+              const spins=7;
+              const intra=(Math.random()*0.6-0.3)*segAngle;
+              const finalAngle=targetAngle+intra+spins*TAU;
 
-      ctx.save();
-      ctx.translate(sx, sy);
-      ctx.rotate(aMid + Math.PI/2); // make squares look "upright-ish"
-      neonFill(() => {
-        ctx.rect(-sqSize/2, -sqSize/2, sqSize, sqSize);
-      }, "rgba(0,0,0,0)", seg.glow, r*0.09);
+              const duration=3200;
+              const start=performance.now();
+              const startAngle=currentAngle;
 
-      // inner fill
-      ctx.fillStyle = seg.color;
-      ctx.globalAlpha = 0.80;
-      ctx.fillRect(-sqSize/2, -sqSize/2, sqSize, sqSize);
+              function ease(t){return 1-Math.pow(1-t,3);}
 
-      // border
-      ctx.globalAlpha = 1;
-      neonStroke(() => {
-        ctx.rect(-sqSize/2, -sqSize/2, sqSize, sqSize);
-      }, "rgba(255,255,255,.18)", r*0.01, seg.glow, r*0.10);
+              function animate(now){
+                  const t=Math.min((now-start)/duration,1);
+                  currentAngle=startAngle+(finalAngle-startAngle)*ease(t);
+                  drawWheel(currentAngle);
 
-      ctx.restore();
+                  if(t<1){
+                      requestAnimationFrame(animate);
+                  }else{
+                      currentAngle=finalAngle%TAU;
+                      drawWheel(currentAngle);
+                      const idx=segmentIndexAtPointer(currentAngle);
+                      resultEl.textContent="Ergebnis: "+segments[idx].label;
+                      spinning=false;
+                      spinBtn.disabled=false;
+                      statusEl.textContent="bereit";
+                  }
+              }
+              requestAnimationFrame(animate);
+          }
 
-      // extra text/markers (numbers like photo)
-      // put them near outer ring on both sides
-      const txtDist = r*0.86;
-      const tx = cx + Math.cos(a0 + segAngle*0.15)*txtDist;
-      const ty = cy + Math.sin(a0 + segAngle*0.15)*txtDist;
+          drawWheel(currentAngle);
+          spinBtn.addEventListener("click",spin);
+      })();
+  </script>
 
-      ctx.save();
-      ctx.translate(tx, ty);
-      ctx.rotate(a0 + segAngle*0.15 + Math.PI/2);
-      ctx.font = `700 ${Math.floor(r*0.08)}px system-ui, sans-serif`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
 
-      ctx.fillStyle = "rgba(180,190,255,.45)";
-      ctx.shadowColor = seg.glow;
-      ctx.shadowBlur = r*0.08;
-
-      // choose a representative label style (like 200 / 2 / 4 / 0)
-      // If segment has "extra" array, render 1-2 items stacked
-      const lines = seg.extra.slice(0,2);
-      if (lines.length === 1){
-        ctx.fillText(lines[0], 0, 0);
-      } else {
-        ctx.fillText(lines[0], 0, -r*0.045);
-        ctx.fillText(lines[1], 0,  r*0.045);
-      }
-      ctx.restore();
-
-      // small neon corner mark (little triangle-ish)
-      const markDist = r*0.90;
-      const mx = cx + Math.cos(a0 + segAngle*0.82)*markDist;
-      const my = cy + Math.sin(a0 + segAngle*0.82)*markDist;
-      ctx.save();
-      ctx.translate(mx, my);
-      ctx.rotate(a0 + segAngle*0.82 + Math.PI/2);
-      neonStroke(() => {
-        ctx.moveTo(0,0);
-        ctx.lineTo(r*0.04, r*0.06);
-        ctx.lineTo(-r*0.04, r*0.06);
-        ctx.closePath();
-      }, "rgba(255,255,255,.16)", r*0.006, seg.glow, r*0.06);
-      ctx.restore();
-    }
-
-    drawCenterDome(cx, cy, r);
-    drawPointer(cx, cy, r);
-  }
-
-  function setUI(isSpinning) {
-    spinBtn.disabled = isSpinning;
-    statusEl.textContent = isSpinning ? "dreht…" : "bereit";
-  }
-
-  function spin() {
-    if (spinning) return;
-    spinning = true;
-    setUI(true);
-    resultEl.textContent = "";
-
-    // Zufälliges Zielsegment
-    const targetIdx = Math.floor(Math.random() * N);
-
-    // Wir wollen, dass der Pointer am Ende auf targetIdx zeigt.
-    // Dafür setzen wir ein Ziel für currentAngle:
-    // pointer samples (pointerAngle - angle) => should be within targetIdx segment.
-    // We'll aim for the middle of the target segment.
-    const targetMid = targetIdx*segAngle + segAngle*0.5;
-    // We need: (pointerAngle - angle) ≈ targetMid  (mod 2π)
-    // => angle ≈ pointerAngle - targetMid (mod 2π)
-    let targetAngle = pointerAngle - targetMid;
-
-    // Add several full spins for drama + small random offset within segment
-    const spins = 6 + Math.floor(Math.random()*3); // 6-8
-    const intra = (Math.random()*0.6 - 0.3) * segAngle; // +- 0.3 segment
-    const finalAngle = targetAngle + intra + spins*TAU;
-
-    const duration = 3200;
-    const start = performance.now();
-    const startAngle = currentAngle;
-
-    function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
-
-    function anim(now){
-      const t = Math.min((now - start) / duration, 1);
-      const e = easeOutCubic(t);
-      currentAngle = startAngle + (finalAngle - startAngle) * e;
-
-      drawWheel(currentAngle);
-
-      if (t < 1){
-        requestAnimationFrame(anim);
-      } else {
-        // snap to exact final
-        currentAngle = finalAngle % TAU;
-        drawWheel(currentAngle);
-
-        const idx = segmentIndexAtPointer(currentAngle);
-        const seg = segments[idx];
-
-        resultEl.textContent = `Ergebnis: ${seg.label}`;
-        spinning = false;
-        setUI(false);
-      }
-    }
-
-    requestAnimationFrame(anim);
-  }
-
-  // init
-  drawWheel(currentAngle);
-  setUI(false);
-
-  spinBtn.addEventListener("click", spin);
-
-  // Optional: tip-to-spin on the wheel area
-  canvas.addEventListener("click", () => { if(!spinning) spin(); });
-})();
-</script>
 </body>
 </html>
