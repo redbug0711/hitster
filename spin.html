@@ -24,7 +24,7 @@
       padding: 18px;
     }
     .wrap{
-      width:min(520px, 100%);
+      width:min(680px, 100%);
       background: rgba(15,20,32,.55);
       border: 1px solid rgba(255,255,255,.08);
       border-radius: 18px;
@@ -51,7 +51,7 @@
       padding: 12px 8px 4px;
     }
     canvas{
-      width:min(420px, 90vw);
+      width:min(620px, 90vw);
       height:auto;
       aspect-ratio: 1 / 1;
       border-radius: 22px;
@@ -66,15 +66,23 @@
       padding: 12px 8px 8px;
       flex-wrap: wrap;
     }
+    .status{
+        display:flex;
+        gap: 10px;
+        align-items:center;
+        justify-content:center;
+        padding: 5px 8px 8px;
+        flex-wrap: wrap;
+    }
     button{
       appearance:none;
       border: 1px solid rgba(255,255,255,.14);
-      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.05));
-      color: var(--text);
-      padding: 12px 16px;
-      border-radius: 14px;
+      background: rgb(26, 216, 19);
+      color: #000;
+      padding: 16px 24px;
+      border-radius: 12px;
       font-weight: 650;
-      letter-spacing: .2px;
+      letter-spacing: .3px;
       cursor:pointer;
       box-shadow: 0 10px 22px rgba(0,0,0,.35);
     }
@@ -112,8 +120,10 @@
 
     <div class="controls">
       <button id="spinBtn">Drehen</button>
-      <span class="pill" id="status">bereit</span>
     </div>
+      <div class="status">
+          <span class="pill" id="status">bereit</span>
+      </div>
 
     <div class="result" id="result"></div>
   </div>
@@ -159,13 +169,17 @@
 
           function drawPointer(cx, cy, r) {
               ctx.save();
+              // Glow
               ctx.shadowColor = "white";
-              ctx.shadowBlur = r*0.1;
+              ctx.shadowBlur = r * 0.1;
               ctx.fillStyle = "white";
               ctx.beginPath();
-              ctx.moveTo(cx, cy-r*1.02);
-              ctx.lineTo(cx-r*0.06, cy-r*0.88);
-              ctx.lineTo(cx+r*0.06, cy-r*0.88);
+              // Spitze (zeigt ins Rad)
+              ctx.moveTo(cx, cy - r * 0.95);
+              // Linke Ecke (außen oberhalb)
+              ctx.lineTo(cx - r * 0.03, cy - r * 1.02);
+              // Rechte Ecke (außen oberhalb)
+              ctx.lineTo(cx + r * 0.03, cy - r * 1.02);
               ctx.closePath();
               ctx.fill();
               ctx.restore();
@@ -259,13 +273,97 @@
               }
 
               // Mittelkuppel
-              ctx.beginPath();
-              ctx.arc(cx,cy,r*0.23,0,TAU);
-              ctx.fillStyle="#fff";
-              ctx.fill();
+              // ----- MITTELKUPPEL (bleibt fix) -----
+              drawCenterDome(cx, cy, r);
 
+              // ----- PFEIL (bleibt fix) -----
               drawPointer(cx,cy,r);
           }
+          function drawCenterDome(cx, cy, r) {
+
+              const domeR = r * 0.23;
+
+              ctx.save();
+
+              // --- Schatten außen ---
+              ctx.shadowColor = "rgba(0,0,0,0.6)";
+              ctx.shadowBlur = r * 0.04;
+
+              // --- Hauptkuppel Verlauf ---
+              const grad = ctx.createRadialGradient(
+                  cx, cy, domeR * 0.1,
+                  cx, cy, domeR
+              );
+
+              grad.addColorStop(0, "rgba(255,255,255,0.95)");
+              grad.addColorStop(0.4, "rgba(220,235,255,0.85)");
+              grad.addColorStop(0.8, "rgba(180,200,230,0.6)");
+              grad.addColorStop(1, "rgba(140,160,190,0.45)");
+
+              ctx.beginPath();
+              ctx.arc(cx, cy, domeR, 0, Math.PI * 2);
+              ctx.fillStyle = grad;
+              ctx.fill();
+
+              ctx.restore();
+
+
+              // --- Facetten Effekt ---
+              ctx.save();
+              ctx.globalAlpha = 0.15;
+              ctx.strokeStyle = "#ffffff";
+              ctx.lineWidth = 1;
+
+              const facets = 24;
+
+              for (let i = 0; i < facets; i++) {
+                  const angle = (i / facets) * Math.PI * 2;
+
+                  ctx.beginPath();
+                  ctx.moveTo(cx, cy);
+                  ctx.lineTo(
+                      cx + Math.cos(angle) * domeR,
+                      cy + Math.sin(angle) * domeR
+                  );
+                  ctx.stroke();
+              }
+
+              ctx.restore();
+
+
+              // --- Glanzreflex ---
+              ctx.save();
+
+              const shine = ctx.createRadialGradient(
+                  cx - domeR * 0.3,
+                  cy - domeR * 0.3,
+                  0,
+                  cx - domeR * 0.3,
+                  cy - domeR * 0.3,
+                  domeR * 0.8
+              );
+
+              shine.addColorStop(0, "rgba(255,255,255,0.8)");
+              shine.addColorStop(1, "rgba(255,255,255,0)");
+
+              ctx.beginPath();
+              ctx.arc(cx, cy, domeR, 0, Math.PI * 2);
+              ctx.fillStyle = shine;
+              ctx.fill();
+
+              ctx.restore();
+
+
+              // --- Dunkler Außenring ---
+              ctx.save();
+              ctx.lineWidth = r * 0.015;
+              ctx.strokeStyle = "rgba(0,0,0,0.6)";
+              ctx.beginPath();
+              ctx.arc(cx, cy, domeR, 0, Math.PI * 2);
+              ctx.stroke();
+              ctx.restore();
+          }
+
 
           function spin(){
               if(spinning) return;
@@ -299,7 +397,7 @@
                       currentAngle=finalAngle%TAU;
                       drawWheel(currentAngle);
                       const idx=segmentIndexAtPointer(currentAngle);
-                      resultEl.textContent="Ergebnis: "+segments[idx].label;
+                      resultEl.textContent="Kategorie: "+segments[idx].label;
                       spinning=false;
                       spinBtn.disabled=false;
                       statusEl.textContent="bereit";
