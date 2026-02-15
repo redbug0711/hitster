@@ -77,10 +77,10 @@
     button{
       appearance:none;
       border: 1px solid rgba(255,255,255,.14);
-      background: rgb(26, 216, 19);
+      background: rgb(12, 236, 162);
       color: #000;
       padding: 16px 24px;
-      border-radius: 12px;
+      border-radius: 2px;
       font-weight: 650;
       letter-spacing: .3px;
       cursor:pointer;
@@ -104,7 +104,7 @@
     .pill{
       display:inline-block;
       padding: 4px 8px;
-      border-radius: 999px;
+      border-radius: 9px;
       border: 1px solid rgba(255,255,255,.12);
       background: rgba(255,255,255,.06);
       font-size: 12px;
@@ -171,7 +171,7 @@
               ctx.save();
               // Glow
               ctx.shadowColor = "white";
-              ctx.shadowBlur = r * 0.1;
+              ctx.shadowBlur = r * 0.01;
               ctx.fillStyle = "white";
               ctx.beginPath();
               // Spitze (zeigt ins Rad)
@@ -245,12 +245,12 @@
                   ctx.rotate(aMid + Math.PI/2);
 
                   ctx.shadowColor = seg.glow;
-                  ctx.shadowBlur = r*0.18;
+                  ctx.shadowBlur = r*0.01;
                   ctx.fillStyle = seg.color;
                   ctx.fillRect(-sqSize/2,-sqSize/2,sqSize,sqSize);
 
                   ctx.lineWidth = r*0.01;
-                  ctx.strokeStyle="rgba(255,255,255,.3)";
+                  ctx.strokeStyle="rgba(255,255,255,.9)";
                   ctx.strokeRect(-sqSize/2,-sqSize/2,sqSize,sqSize);
                   ctx.restore();
 
