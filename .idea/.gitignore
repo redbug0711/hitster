@@ -1,0 +1,20 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+# Ignored default folder with query files
+/queries/
+# Datasource local storage ignored files
+/dataSources/
+/dataSources.local.xml
+# Editor-based HTTP Client requests
+/httpRequests/
+
+# IDE files
+/.idea/
+/nbproject
+/.vscode/
+.phpactor.json
+
+# hidden files by windows & mac
+Thumbs.db
+.DS_Store
